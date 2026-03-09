@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - AutoGrader</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+    <nav class="top-nav hidden" id="main-nav">
+        <div class="brand-logo-small">AG</div>
+        <div class="user-profile">
+            <span id="user-name">Memuat...</span>
+            <span id="user-role-badge" class="badge">Role</span>
+            <button id="btn-logout" class="btn-outline">Keluar</button>
+        </div>
+    </nav>
+
+    <div class="main-container">
+
+        <div id="view-login" class="role-view">
+            <div class="header">
+                <div class="brand-logo">AG</div>
+                <h1>Masuk ke Akun</h1>
+                <p>Silakan masukkan email dan kata sandi Anda</p>
+            </div>
+            <div class="login-form">
+                <input type="email" id="input-email" class="input-field" placeholder="Email (contoh: guru@sekolah.com)">
+                <input type="password" id="input-password" class="input-field" placeholder="Kata Sandi">
+                <button class="submit-btn" id="btn-login">Masuk</button>
+                <p id="login-error" style="color: red; font-size: 14px; text-align: center; margin-top: 10px; display: none;">Login gagal. Periksa kembali email/password.</p>
+            </div>
+        </div>
+
+        </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
