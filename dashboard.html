@@ -28,14 +28,113 @@
                 <p>Silakan masukkan email dan kata sandi Anda</p>
             </div>
             <div class="login-form">
-                <input type="email" id="input-email" class="input-field" placeholder="Email (contoh: guru@sekolah.com)">
+                <input type="email" id="input-email" class="input-field" placeholder="Email (contoh: siswa@sekolah.com)">
                 <input type="password" id="input-password" class="input-field" placeholder="Kata Sandi">
                 <button class="submit-btn" id="btn-login">Masuk</button>
-                <p id="login-error" style="color: red; font-size: 14px; text-align: center; margin-top: 10px; display: none;">Login gagal. Periksa kembali email/password.</p>
+                <p id="login-error" style="color: red; font-size: 14px; text-align: center; margin-top: 10px; display: none;">Login gagal.</p>
             </div>
         </div>
 
+<div id="view-guru" class="role-view hidden">
+            <div class="header-left">
+                <h1>Dashboard Guru</h1>
+                <p>Kelola kelas dan pantau hasil koreksi otomatis.</p>
+            </div>
+            
+            <div class="action-bar" style="margin-bottom: 20px;">
+                <button id="btn-buka-modal" class="submit-btn" style="width: auto;">+ Buat Tugas Baru</button>
+            </div>
+
+            <div id="task-container" class="task-grid">
+                </div>
+
+            <hr style="border: 1px solid #f3f4f6; margin: 30px 0;">
+            <h2>Rekapitulasi Nilai</h2>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Nama Siswa</th>
+                        <th>Tugas</th>
+                        <th>Status</th>
+                        <th>Nilai AI</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="4" style="text-align:center;">Pilih tugas untuk melihat nilai</td></tr>
+                </tbody>
+            </table>
         </div>
+
+<div id="modal-buat-tugas" class="modal hidden">
+            <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
+                <h2>Buat Tugas Baru</h2>
+                <p style="font-size: 14px; color: #6b7280; margin-bottom: 15px;">Lengkapi detail tugas dan unggah file yang diperlukan.</p>
+                
+                <label style="font-size: 14px; font-weight: bold;">Mata Pelajaran</label>
+                <input type="text" id="input-mapel" placeholder="Contoh: Matematika">
+
+                <label style="font-size: 14px; font-weight: bold;">Kelas</label>
+                <select id="input-kelas" style="width: 100%; margin-bottom: 15px; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-family: inherit;">
+                    <option value="">-- Pilih Kelas --</option>
+                    <option value="Kelas 7A">Kelas 7A</option>
+                    <option value="Kelas 7B">Kelas 7B</option>
+                    <option value="Kelas 8A">Kelas 8A</option>
+                    <option value="Kelas 9A">Kelas 9A</option>
+                    <option value="Kelas 10">Kelas 10A</option>
+                </select>
+
+                <label style="font-size: 14px; font-weight: bold;">Judul Tugas</label>
+                <input type="text" id="input-nama-tugas" placeholder="Contoh: Aljabar Bab 1">
+                
+                <label style="font-size: 14px; font-weight: bold;">Upload File Soal (PDF/Doc/Gambar) - Opsional</label>
+                <input type="file" id="input-file-soal" accept=".pdf, .doc, .docx, image/*">
+                <p style="font-size: 12px; color: #9ca3af; margin-top: -10px; margin-bottom: 15px;">Biarkan kosong jika soal sudah dicatat siswa.</p>
+
+                <label style="font-size: 14px; font-weight: bold;">Upload Kunci Jawaban (Wajib: PDF/Gambar)</label>
+                <input type="file" id="input-file-kunci" accept=".pdf, image/*">
+                
+                <div class="btn-group" style="margin-top: 10px;">
+                    <button id="btn-simpan-tugas" class="submit-btn">Simpan Tugas</button>
+                    <button id="btn-tutup-modal" class="btn-outline">Batal</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-siswa" class="role-view hidden">
+            <div class="upload-container" style="box-shadow: none; padding: 0; max-width: 100%;">
+                <div class="header">
+                    <h1>Kirim Lembar Jawaban</h1>
+                    <p>Pastikan foto terlihat jelas, terang, dan tidak buram</p>
+                </div>
+
+                <div class="task-info">
+                    <strong>Tugas Matematika Bab 1</strong>
+                    <span class="student-name">Tenggat Waktu: Besok, 23:59</span>
+                </div>
+
+                <label class="upload-area" for="file-input">
+                    <div class="upload-icon">📸</div>
+                    <p class="upload-text"><span>Klik untuk unggah</span> foto jawaban</p>
+                    <p class="upload-hint">Format: JPG, PNG (Maks 5MB)</p>
+                </label>
+                <input type="file" id="file-input" accept="image/jpeg, image/png">
+
+                <button class="submit-btn" id="btn-submit">Kirim untuk Dikoreksi</button>
+            </div>
+        </div>
+
+        <div id="view-orangtua" class="role-view hidden">
+            <div class="header-left">
+                <h1>Pantau Belajar Anak</h1>
+                <p>Melihat hasil koreksi dan umpan balik dari sistem.</p>
+            </div>
+            <div class="task-info">
+                <strong>Data Siswa</strong>
+                <span class="student-name">Belum ada nilai terbaru.</span>
+            </div>
+        </div>
+
+    </div>
 
     <script src="script.js"></script>
 </body>
