@@ -1,289 +1,248 @@
-// 1. Inisialisasi Koneksi Supabase
-// Nama variabel diubah menjadi 'supabaseClient' agar tidak bentrok dengan library CDN di HTML
+// ==========================================
+// 1. KONFIGURASI & STATE
+// ==========================================
 const supabaseUrl = 'https://vhvryershcomgwxezggo.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZodnJ5ZXJzaGNvbWd3eGV6Z2dvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI2MDcyNDQsImV4cCI6MjA3ODE4MzI0NH0.Ul-kcLoMGKdbQB_J6YJkTFrgTYMqc1f4FRhBHgOUWW8';
-
 const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-// 2. Deklarasi Elemen UI
-const viewLogin = document.getElementById('view-login');
-const viewGuru = document.getElementById('view-guru');
-const viewSiswa = document.getElementById('view-siswa');
-const viewOrangTua = document.getElementById('view-orangtua');
-const mainNav = document.getElementById('main-nav');
-const loginError = document.getElementById('login-error');
-const btnLogin = document.getElementById('btn-login');
-const btnLogout = document.getElementById('btn-logout');
+let dataTugasLokal = []; // Cache untuk fitur filter fast-search
+let keranjangSoal = [];
+let keranjangKunci = [];
 
-// 3. Fungsi untuk Menyembunyikan Semua Tampilan
-function hideAllViews() {
-    const allViews = document.querySelectorAll('.role-view');
-    allViews.forEach(view => {
-        if (view) view.classList.add('hidden');
-    });
-}
+// ==========================================
+// 2. ELEMEN UI (DOM)
+// ==========================================
+const views = {
+    login: document.getElementById('view-login'),
+    guru: document.getElementById('view-guru'),
+    siswa: document.getElementById('view-siswa'),
+    nav: document.getElementById('main-nav')
+};
 
-// 4. Fungsi Utama: Proses Login
-if (btnLogin) {
-    btnLogin.addEventListener('click', async () => {
-        const emailInput = document.getElementById('input-email');
-        const passwordInput = document.getElementById('input-password');
-        
-        // Cek jika input kosong
-        if (!emailInput || !passwordInput || !emailInput.value || !passwordInput.value) {
-            if (loginError) {
-                loginError.innerText = "Email dan password tidak boleh kosong.";
-                loginError.style.display = "block";
-            }
-            return;
-        }
+const loginForm = {
+    email: document.getElementById('input-email'),
+    pass: document.getElementById('input-password'),
+    btn: document.getElementById('btn-login'),
+    error: document.getElementById('login-error')
+};
 
-        const email = emailInput.value;
-        const password = passwordInput.value;
+// ==========================================
+// 3. LOGIKA AUTH (LOGIN/LOGOUT)
+// ==========================================
 
-        btnLogin.innerText = "Memproses...";
-        if (loginError) loginError.style.display = "none";
+async function handleLogin() {
+    const email = loginForm.email.value;
+    const password = loginForm.pass.value;
 
-        try {
-            // A. Autentikasi ke Supabase
-            const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
-                email: email,
-                password: password,
-            });
+    if (!email || !password) return alert("Email dan password wajib diisi!");
 
-            if (authError) throw authError;
+    loginForm.btn.innerText = "Memproses...";
+    loginForm.error.style.display = "none";
 
-            // B. Ambil role dari tabel 'users'
-            const userId = authData.user.id;
-            const { data: userData, error: userError } = await supabaseClient
-                .from('users')
-                .select('*')
-                .eq('id', userId)
-                .single();
-
-            if (userError) throw userError;
-
-            // C. Tampilkan Dashboard yang Sesuai
-            tampilkanDashboard(userData);
-
-        } catch (error) {
-            console.error("Error Login:", error);
-            if (loginError) {
-                loginError.innerText = "Gagal masuk. Pastikan email dan kata sandi benar.";
-                loginError.style.display = "block";
-            }
-        } finally {
-            btnLogin.innerText = "Masuk";
-        }
-    });
-}
-
-// 5. Fungsi untuk Mengatur Tampilan Berdasarkan Role
-function tampilkanDashboard(userData) {
-    hideAllViews();
-    if (mainNav) mainNav.classList.remove('hidden'); 
-    
-    const userNameEl = document.getElementById('user-name');
-    const userRoleEl = document.getElementById('user-role-badge');
-    
-    if (userNameEl) userNameEl.innerText = userData.full_name || 'Pengguna';
-    if (userRoleEl) userRoleEl.innerText = (userData.role || 'Role').toUpperCase();
-
-    // Logika pengalihan halaman berdasarkan role
-    if (userData.role === 'guru' && viewGuru) {
-        viewGuru.classList.remove('hidden');
-        muatDataTugasGuru(); 
-    } else if (userData.role === 'siswa' && viewSiswa) {
-        viewSiswa.classList.remove('hidden');
-    } else if (userData.role === 'orang_tua' && viewOrangTua) {
-        viewOrangTua.classList.remove('hidden');
-    }
-}
-
-// 6. Fungsi Tarik Data Tugas (Contoh untuk Guru)
-async function muatDataTugasGuru() {
     try {
-        const { data: tasks, error } = await supabaseClient
-            .from('tasks')
-            .select('*');
-        
-        if (error) throw error;
-        
-        console.log("Data Tugas Berhasil Ditarik:", tasks);
+        const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (authError) throw authError;
+
+        const { data: userData, error: userError } = await supabaseClient
+            .from('users').select('*').eq('id', authData.user.id).single();
+        if (userError) throw userError;
+
+        tampilkanHalamanBerdasarkanRole(userData);
     } catch (error) {
-        console.error("Gagal menarik data tugas:", error.message);
+        loginForm.error.innerText = "Login Gagal: Akun tidak ditemukan.";
+        loginForm.error.style.display = "block";
+    } finally {
+        loginForm.btn.innerText = "Masuk";
     }
 }
 
-// 7. Fungsi Logout
-if (btnLogout) {
-    btnLogout.addEventListener('click', async () => {
-        try {
-            await supabaseClient.auth.signOut();
-        } catch (error) {
-            console.error("Error saat logout:", error);
-        }
-        
-        if (mainNav) mainNav.classList.add('hidden');
-        hideAllViews();
-        if (viewLogin) viewLogin.classList.remove('hidden');
-        
-        const emailInput = document.getElementById('input-email');
-        const passwordInput = document.getElementById('input-password');
-        if (emailInput) emailInput.value = '';
-        if (passwordInput) passwordInput.value = '';
-    });
+function tampilkanHalamanBerdasarkanRole(user) {
+    Object.values(views).forEach(v => v?.classList.add('hidden'));
+    views.nav.classList.remove('hidden');
+    document.getElementById('user-name').innerText = user.full_name;
+    document.getElementById('user-role-badge').innerText = user.role.toUpperCase();
+
+    if (user.role === 'guru') {
+        views.guru.classList.remove('hidden');
+        inisialisasiDashboardGuru();
+    } else {
+        views.siswa.classList.remove('hidden');
+        // inisialisasiDashboardSiswa(); // Nanti jika siswa sudah dioptimalkan
+    }
 }
 
 // ==========================================
-// JEMBATAN 2: KIRIM JAWABAN SISWA KE N8N
+// 4. FITUR GURU: DAFTAR TUGAS & FILTER
 // ==========================================
 
-const btnSubmit = document.getElementById('btn-submit');
-const fileInput = document.getElementById('file-input');
+async function inisialisasiDashboardGuru() {
+    await muatDropdownFilter(); // Isi dropdown Mapel & Kelas di toolbar
+    await muatDaftarTugas();    // Ambil data tugas
+}
 
-if (btnSubmit && fileInput) {
-    btnSubmit.addEventListener('click', async () => {
-        // 1. Cek apakah siswa sudah memilih file
-        const file = fileInput.files[0];
-        if (!file) {
-            alert("Silakan klik ikon kamera dan pilih foto jawaban terlebih dahulu!");
-            return;
-        }
+async function muatDaftarTugas() {
+    const container = document.getElementById('container-daftar-tugas');
+    container.innerHTML = '<p>Memuat data...</p>';
 
-        // 2. Siapkan data yang akan dikirim (menggunakan FormData agar bisa mengirim file gambar)
-        const formData = new FormData();
-        formData.append('file_jawaban', file);
-        
-        // Opsional: Kita bisa ikut sertakan nama siswa yang sedang login
-        const namaSiswa = document.getElementById('user-name').innerText;
-        formData.append('nama_siswa', namaSiswa);
-        
-        // Nanti kita akan tambahkan ID Tugas dari Supabase di sini
-        formData.append('id_tugas', '8181cd87-0b05-464e-a8ac-313f61ac6504');
+    const { data, error } = await supabaseClient
+        .from('tasks')
+        .select('id, title, created_at, subjects(name), classes(name)')
+        .order('created_at', { ascending: false });
 
-        // 3. Ganti URL ini dengan Test URL dari Webhook n8n Anda!
-        const n8nWebhookUrl = 'https://n8n.srv867549.hstgr.cloud/webhook-test/upload-jawaban';
+    if (!error) {
+        dataTugasLokal = data;
+        renderTugas(dataTugasLokal);
+    }
+}
 
-        // 4. Ubah tampilan tombol saat proses pengiriman
-        btnSubmit.innerText = "Mengunggah...";
-        btnSubmit.style.backgroundColor = "#9CA3AF"; // Warna abu-abu
-        btnSubmit.disabled = true;
+function renderTugas(daftar) {
+    const container = document.getElementById('container-daftar-tugas');
+    container.innerHTML = daftar.length ? '' : '<p>Tidak ada tugas ditemukan.</p>';
 
-        try {
-            // 5. Tembakkan data ke n8n menggunakan Fetch API
-            const response = await fetch(n8nWebhookUrl, {
-                method: 'POST',
-                body: formData
-            });
-
-            if (!response.ok) throw new Error("Gagal terhubung ke server n8n");
-
-            // Jika berhasil
-            alert("Berhasil! Jawaban Anda telah terkirim dan sedang diperiksa oleh AI.");
-            
-            // Kosongkan form setelah berhasil
-            fileInput.value = '';
-            document.querySelector('.upload-text').innerHTML = '<span>Klik untuk unggah</span> foto jawaban lainnya';
-
-        } catch (error) {
-            console.error("Error Upload:", error);
-            alert("Terjadi kesalahan saat mengirim foto. Pastikan n8n sedang aktif (Listen for test event).");
-        } finally {
-            // Kembalikan tampilan tombol ke semula
-            btnSubmit.innerText = "Kirim untuk Dikoreksi";
-            btnSubmit.style.backgroundColor = "var(--primary-color)";
-            btnSubmit.disabled = false;
-        }
+    daftar.forEach(task => {
+        const div = document.createElement('div');
+        div.className = 'task-card';
+        div.innerHTML = `
+            <h3>${task.title}</h3>
+            <p>📚 ${task.subjects?.name} | 👥 ${task.classes?.name}</p>
+            <div class="card-actions">
+                <button onclick="hapusTugas('${task.id}', '${task.title}')" class="btn-hapus-tugas">🗑️ Hapus</button>
+            </div>
+        `;
+        container.appendChild(div);
     });
 }
 
-// Tambahan estetika: Mengubah teks saat file berhasil dipilih oleh siswa
-if (fileInput) {
-    fileInput.addEventListener('change', (event) => {
-        const fileName = event.target.files[0]?.name;
-        if (fileName) {
-            document.querySelector('.upload-text').innerHTML = `File terpilih: <span style="color: #059669;">${fileName}</span>`;
-        }
+// Fitur Filter & Cari (Gabungan)
+function filterTugas() {
+    const keyword = document.getElementById('input-cari').value.toLowerCase();
+    const mapel = document.getElementById('select-filter-mapel').value;
+    const kelas = document.getElementById('select-filter-kelas').value;
+
+    const hasil = dataTugasLokal.filter(t => {
+        const matchNama = t.title.toLowerCase().includes(keyword);
+        const matchMapel = mapel === "" || t.subjects?.name === mapel;
+        const matchKelas = kelas === "" || t.classes?.name === kelas;
+        return matchNama && matchMapel && matchKelas;
     });
+    renderTugas(hasil);
 }
 
 // ==========================================
-// FITUR GURU: BUAT TUGAS BARU
+// 5. FITUR GURU: MODAL & UPLOAD KE N8N
 // ==========================================
-const btnBukaModal = document.getElementById('btn-buka-modal');
-const btnTutupModal = document.getElementById('btn-tutup-modal');
-const modalBuatTugas = document.getElementById('modal-buat-tugas');
-const btnSimpanTugas = document.getElementById('btn-simpan-tugas');
 
-if (btnBukaModal) {
-    // Buka dan Tutup Modal
-    btnBukaModal.addEventListener('click', () => modalBuatTugas.classList.remove('hidden'));
-    btnTutupModal.addEventListener('click', () => modalBuatTugas.classList.add('hidden'));
+function setupFileCart(inputId, previewId, keranjang) {
+    const input = document.getElementById(inputId);
+    const preview = document.getElementById(previewId);
+    input.addEventListener('change', () => {
+        Array.from(input.files).forEach(f => keranjang.push(f));
+        input.value = '';
+        updatePreview(preview, keranjang);
+    });
+}
 
-    // Proses Simpan Tugas
-// Proses Simpan Tugas
-        btnSimpanTugas.addEventListener('click', async () => {
-            // 1. Tarik semua nilai dari form
-            const mapel = document.getElementById('input-mapel').value;
-            const kelas = document.getElementById('input-kelas').value;
-            const namaTugas = document.getElementById('input-nama-tugas').value;
-            const fileSoal = document.getElementById('input-file-soal').files[0];
-            const fileKunci = document.getElementById('input-file-kunci').files[0];
+function updatePreview(container, keranjang) {
+    container.innerHTML = '';
+    keranjang.forEach((file, i) => {
+        const item = document.createElement('div');
+        item.className = 'file-item';
+        item.innerHTML = `<span>📄 ${file.name}</span><button onclick="hapusDariKeranjang(${i}, '${container.id}')">✕</button>`;
+        container.appendChild(item);
+    });
+}
 
-            // 2. Validasi (Pastikan kolom wajib tidak kosong)
-            if (!mapel || !kelas || !namaTugas || !fileKunci) {
-                alert("Mata Pelajaran, Kelas, Judul Tugas, dan Kunci Jawaban wajib diisi!");
-                return;
-            }
+window.hapusDariKeranjang = (index, containerId) => {
+    if (containerId === 'preview-soal') keranjangSoal.splice(index, 1);
+    else keranjangKunci.splice(index, 1);
+    updatePreview(document.getElementById(containerId), containerId === 'preview-soal' ? keranjangSoal : keranjangKunci);
+};
 
-            // Ubah tombol jadi loading
-            btnSimpanTugas.innerText = "Mengunggah...";
-            btnSimpanTugas.style.backgroundColor = "#9CA3AF";
-            btnSimpanTugas.disabled = true;
+async function simpanTugasKeN8N() {
+    const btn = document.getElementById('btn-simpan-tugas');
+    const payload = {
+        mapel: document.getElementById('input-mapel').value,
+        kelas: document.getElementById('input-kelas').value,
+        judul: document.getElementById('input-nama-tugas').value
+    };
 
-            // 3. Bungkus semua data ke dalam FormData
-            const formData = new FormData();
-            formData.append('mata_pelajaran', mapel);
-            formData.append('kelas', kelas);
-            formData.append('nama_tugas', namaTugas);
-            formData.append('file_kunci', fileKunci);
-            
-            // File soal bersifat opsional, jadi kita cek dulu apakah guru mengunggahnya
-            if (fileSoal) {
-                formData.append('file_soal', fileSoal);
-            }
+    if (!payload.mapel || !payload.kelas || !payload.judul || keranjangKunci.length === 0) {
+        return alert("Mohon lengkapi semua data dan kunci jawaban!");
+    }
 
-            // URL Webhook n8n KHUSUS untuk pembuatan tugas
-            const n8nCreateTaskWebhook = 'https://n8n.srv867549.hstgr.cloud/webhook-test/buat-tugas'; 
+    btn.innerText = "Sedang Mengirim...";
+    btn.disabled = true;
 
-            try {
-                // 4. Kirim ke n8n
-                const response = await fetch(n8nCreateTaskWebhook, {
-                    method: 'POST',
-                    body: formData
-                });
+    const fd = new FormData();
+    fd.append('subject_id', payload.mapel);
+    fd.append('class_id', payload.kelas);
+    fd.append('nama_tugas', payload.judul);
+    keranjangSoal.forEach((f, i) => fd.append(`file_soal_${i}`, f));
+    keranjangKunci.forEach((f, i) => fd.append(`file_kunci_${i}`, f));
 
-                if (!response.ok) throw new Error("Gagal terhubung ke server n8n");
+    try {
+        const res = await fetch('https://n8n.srv867549.hstgr.cloud/webhook-test/buat-tugas', { method: 'POST', body: fd });
+        if (res.ok) {
+            alert("Berhasil disimpan!");
+            location.reload(); // Cara termudah untuk reset semua state
+        }
+    } catch (e) {
+        alert("Gagal terhubung ke n8n.");
+    } finally {
+        btn.innerText = "Simpan Tugas";
+        btn.disabled = false;
+    }
+}
 
-                alert("Berhasil! Tugas baru telah dibuat dan file tersimpan di Google Drive.");
-                modalBuatTugas.classList.add('hidden');
-                
-                // Bersihkan form setelah berhasil
-                document.getElementById('input-mapel').value = '';
-                document.getElementById('input-kelas').value = '';
-                document.getElementById('input-nama-tugas').value = '';
-                document.getElementById('input-file-soal').value = '';
-                document.getElementById('input-file-kunci').value = '';
+// ==========================================
+// 6. EVENT LISTENERS UTAMA
+// ==========================================
 
-            } catch (error) {
-                console.error("Error pembuatan tugas:", error);
-                alert("Gagal membuat tugas. Pastikan n8n sedang aktif menerima data.");
-            } finally {
-                // Kembalikan tombol ke kondisi semula
-                btnSimpanTugas.innerText = "Simpan Tugas";
-                btnSimpanTugas.style.backgroundColor = "var(--primary-color)";
-                btnSimpanTugas.disabled = false;
-            }
-        });
+document.addEventListener('DOMContentLoaded', () => {
+    // Auth
+    if (loginForm.btn) loginForm.btn.onclick = handleLogin;
+    if (document.getElementById('btn-logout')) {
+        document.getElementById('btn-logout').onclick = () => location.reload();
+    }
+
+    // Modal Guru
+    const modal = document.getElementById('modal-buat-tugas');
+    document.getElementById('btn-buka-modal')?.addEventListener('click', () => {
+        modal.classList.remove('hidden');
+        muatDropdownModal();
+    });
+    document.getElementById('btn-tutup-modal')?.addEventListener('click', () => modal.classList.add('hidden'));
+    document.getElementById('btn-simpan-tugas')?.addEventListener('click', simpanTugasKeN8N);
+
+    // Filter toolbar
+    document.getElementById('input-cari')?.addEventListener('input', filterTugas);
+    document.getElementById('select-filter-mapel')?.addEventListener('change', filterTugas);
+    document.getElementById('select-filter-kelas')?.addEventListener('change', filterTugas);
+
+    // Setup Upload
+    if (document.getElementById('input-file-soal')) {
+        setupFileCart('input-file-soal', 'preview-soal', keranjangSoal);
+        setupFileCart('input-file-kunci', 'preview-kunci', keranjangKunci);
+    }
+});
+
+// Helper: Isi dropdown modal
+async function muatDropdownModal() {
+    const { data: m } = await supabaseClient.from('subjects').select('*');
+    const { data: k } = await supabaseClient.from('classes').select('*');
+    
+    const selM = document.getElementById('input-mapel');
+    const selK = document.getElementById('input-kelas');
+    
+    selM.innerHTML = '<option value="">-- Pilih Mapel --</option>' + m.map(x => `<option value="${x.id}">${x.name}</option>`).join('');
+    selK.innerHTML = '<option value="">-- Pilih Kelas --</option>' + k.map(x => `<option value="${x.id}">${x.name}</option>`).join('');
+}
+
+// Helper: Isi dropdown filter toolbar
+async function muatDropdownFilter() {
+    const { data: m } = await supabaseClient.from('subjects').select('name');
+    const { data: k } = await supabaseClient.from('classes').select('name');
+    
+    document.getElementById('select-filter-mapel').innerHTML = '<option value="">Semua Mapel</option>' + m.map(x => `<option value="${x.name}">${x.name}</option>`).join('');
+    document.getElementById('select-filter-kelas').innerHTML = '<option value="">Semua Kelas</option>' + k.map(x => `<option value="${x.name}">${x.name}</option>`).join('');
 }
