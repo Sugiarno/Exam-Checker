@@ -57,17 +57,23 @@ async function handleLogin() {
 }
 
 function tampilkanHalamanBerdasarkanRole(user) {
+    // Sembunyikan semua view dulu
     Object.values(views).forEach(v => v?.classList.add('hidden'));
+    
+    // Tampilkan Navigasi
     views.nav.classList.remove('hidden');
     document.getElementById('user-name').innerText = user.full_name;
     document.getElementById('user-role-badge').innerText = user.role.toUpperCase();
 
+    // --- LOGIKA PENGALIHAN ---
     if (user.role === 'guru') {
+        // Jika Guru, tetap di halaman ini dan munculkan dashboard guru
         views.guru.classList.remove('hidden');
         inisialisasiDashboardGuru();
-    } else {
-        views.siswa.classList.remove('hidden');
-        // inisialisasiDashboardSiswa(); // Nanti jika siswa sudah dioptimalkan
+    } 
+    else if (user.role === 'siswa') {
+        // JIKA SISWA, PINDAHKAN KE HALAMAN SISWA.HTML
+        window.location.href = 'siswa.html'; 
     }
 }
 
