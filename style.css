@@ -275,3 +275,36 @@ body {
 
 .submit-btn:hover { background-color: var(--primary-hover); }
 .btn-outline { background: white; border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; cursor: pointer; }
+
+/* --- SISTEM NOTIFIKASI TOAST --- */
+#toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+}
+
+.toast {
+    background: white;
+    color: var(--text-main);
+    padding: 16px 24px;
+    border-radius: 12px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-left: 6px solid #e5e7eb;
+    transform: translateX(120%);
+    transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    font-size: 14px;
+    font-weight: 500;
+    min-width: 300px;
+}
+
+.toast.show { transform: translateX(0); }
+.toast.success { border-left-color: var(--success); }
+.toast.error { border-left-color: var(--danger); }
+.toast.info { border-left-color: var(--primary-color); }
+
+.toast-icon { font-size: 18px; }

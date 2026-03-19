@@ -18,47 +18,67 @@
         </div>
     </nav>
 
-    <div class="main-container">
+<div class="main-container">
         
         <div class="header-left">
             <h1>Ruang Tugas Siswa</h1>
             <p>Pilih tugas dan unggah foto lembar jawabanmu di sini.</p>
         </div>
 
-        <div class="form-group" style="margin-bottom: 30px;">
-            <label style="font-weight: bold; font-size: 16px;">1. Pilih Tugas / Ujian</label>
-            <select id="select-tugas-siswa" class="form-select" style="height: 50px; font-size: 16px;">
-                <option value="">-- Memuat Daftar Tugas... --</option>
-            </select>
-        </div>
-
-        <div id="area-soal-siswa" class="task-info hidden">
-            <strong>📋 Detail Tugas & Soal</strong>
-            <p id="info-tugas-detail" style="margin-bottom: 10px;">Pilih tugas untuk melihat detail.</p>
-            <div id="list-file-soal">
+        <div id="panel-daftar-tugas">
+            <div class="toolbar-tugas">
+                <div class="search-box">
+                    <input type="text" id="input-cari-siswa" placeholder="🔍 Cari judul tugas...">
                 </div>
+                <div class="filter-box">
+                    <select id="select-filter-mapel-siswa">
+                        <option value="">Semua Mapel</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="container-tugas-siswa" class="grid-tugas">
+                <p class="loading-text">Memuat tugas terbarumu...</p>
+            </div>
         </div>
 
-        <hr class="separator" style="margin: 30px 0;">
-
-        <div id="area-upload-jawaban" class="hidden">
-            <label style="font-weight: bold; font-size: 16px; display: block; margin-bottom: 15px;">
-                2. Unggah Jawaban Anda
-            </label>
-            
-            <label class="upload-area" for="file-jawaban">
-                <div class="upload-icon">📸</div>
-                <p class="upload-text" id="status-pilih-file"><span>Klik untuk pilih foto</span> atau ambil gambar</p>
-                <p class="upload-hint">Format: JPG, PNG, PDF (Maks 5MB)</p>
-            </label>
-            <input type="file" id="file-jawaban" accept="image/*, .pdf" style="display: none;">
-
-            <button id="btn-kirim-jawaban" class="submit-btn" style="margin-top: 10px;">
-                🚀 Kirim Jawaban Sekarang
+        <div id="panel-detail-tugas" class="hidden">
+            <button id="btn-kembali" class="btn-outline" style="margin-bottom: 20px;">
+                🔙 Kembali ke Daftar Tugas
             </button>
+
+            <div class="task-info">
+                <strong id="detail-judul-tugas" style="font-size: 18px;">Memuat Judul...</strong>
+                <span id="detail-mapel-tugas" class="student-name">Mata Pelajaran</span>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 25px;">
+                <label style="font-weight: bold; display: block; margin-bottom: 10px;">📋 File Soal dari Guru:</label>
+                <div id="list-file-soal">
+                    </div>
+            </div>
+
+            <hr class="separator" style="margin: 30px 0;">
+
+            <div id="area-upload-jawaban">
+                <label style="font-weight: bold; font-size: 16px; display: block; margin-bottom: 15px;">
+                    📤 Unggah Lembar Jawaban Anda
+                </label>
+                
+                <label class="upload-area" for="file-jawaban">
+                    <div class="upload-icon">📸</div>
+                    <p class="upload-text" id="status-pilih-file"><span>Klik untuk pilih foto</span> atau ambil gambar</p>
+                    <p class="upload-hint">Format: JPG, PNG, PDF (Maks 5MB)</p>
+                </label>
+                <input type="file" id="file-jawaban" accept="image/*, .pdf" style="display: none;">
+
+                <button id="btn-kirim-jawaban" class="submit-btn" style="margin-top: 10px;">
+                    🚀 Kirim Jawaban Sekarang
+                </button>
+            </div>
         </div>
 
-        <div style="margin-top: 40px;">
+        <div style="margin-top: 50px;">
             <h3>Status Pengiriman Terakhir</h3>
             <div class="table-container">
                 <table class="data-table">

@@ -1,178 +1,232 @@
 // ==========================================
-// 1. KONFIGURASI & STATE UTAMA
+// 1. KONFIGURASI SUPABASE & STATE
 // ==========================================
 const supabaseUrl = 'https://vhvryershcomgwxezggo.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZodnJ5ZXJzaGNvbWd3eGV6Z2dvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI2MDcyNDQsImV4cCI6MjA3ODE4MzI0NH0.Ul-kcLoMGKdbQB_J6YJkTFrgTYMqc1f4FRhBHgOUWW8';
 const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 let dataSiswaLokal = null;
+let dataTugasSiswaLokal = []; // Menampung semua tugas untuk difilter
+let tugasTerpilih = null;     // Menampung ID tugas yang sedang diklik
 
 // ==========================================
-// 2. INISIALISASI HALAMAN (AUTO-RUN)
+// 2. INISIALISASI HALAMAN
 // ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log("Memulai sesi siswa...");
-    
-    // A. Cek Status Login
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
     
     if (authError || !user) {
-        console.warn("Sesi tidak ditemukan, dialihkan ke login.");
         window.location.href = 'dashboard.html'; 
         return;
     }
 
-    // B. Ambil Data Profil Lengkap (ID, Nama, dan ID Kelas)
     try {
         const { data: userData, error: userError } = await supabaseClient
-            .from('users')
-            .select('*') // Mengambil data dasar dulu untuk menghindari eror Join jika tabel belum sinkron
-            .eq('id', user.id)
-            .single();
+            .from('users').select('*').eq('id', user.id).single();
 
         if (userError) throw userError;
 
         dataSiswaLokal = userData;
         document.getElementById('user-name').innerText = userData.full_name || 'Siswa';
 
-        // C. Jika profil berhasil diambil, muat tugas & riwayat
         if (userData.class_id) {
-            muatDaftarTugas(userData.class_id);
+            muatDaftarTugasSiswa(userData.class_id);
         } else {
-            document.getElementById('select-tugas-siswa').innerHTML = '<option>Akun Anda belum memiliki Kelas.</option>';
+            document.getElementById('container-tugas-siswa').innerHTML = '<p>Akun Anda belum memiliki Kelas.</p>';
         }
-        
         muatRiwayatNilai(user.id);
-
     } catch (err) {
-        console.error("Gagal memuat profil siswa:", err.message);
-        alert("Gagal memuat profil. Pastikan data class_id sudah diisi di tabel users.");
+        alert("Gagal memuat profil.");
     }
 });
 
 // ==========================================
-// 3. FUNGSI MUAT DAFTAR TUGAS (DROPDOWN)
+// 3. FITUR KARTU TUGAS & FILTER
 // ==========================================
-async function muatDaftarTugas(classId) {
-    const dropdown = document.getElementById('select-tugas-siswa');
+
+// Mengambil tugas dari database (Diurutkan dari yang Paling Baru)
+async function muatDaftarTugasSiswa(classId) {
+    const container = document.getElementById('container-tugas-siswa');
     
     try {
-        // Ambil tugas yang class_id-nya cocok dengan class_id siswa
         const { data: tasks, error } = await supabaseClient
             .from('tasks')
-            .select('id, title, subjects(name)')
-            .eq('class_id', classId);
+            .select('id, title, created_at, subjects(name)')
+            .eq('class_id', classId)
+            .order('created_at', { ascending: false }); // ORDER TERBARU DI ATAS
 
         if (error) throw error;
 
-        dropdown.innerHTML = '<option value="">-- Pilih Tugas / Ujian --</option>';
+        dataTugasSiswaLokal = tasks;
         
-        if (tasks.length === 0) {
-            dropdown.innerHTML = '<option value="">Belum ada tugas untuk kelas Anda.</option>';
-            return;
-        }
-
-        tasks.forEach(t => {
-            const opt = document.createElement('option');
-            opt.value = t.id;
-            opt.textContent = `${t.title} (${t.subjects?.name || 'Umum'})`;
-            dropdown.appendChild(opt);
-        });
-
+        // Buat dropdown mapel dinamis khusus dari tugas yang ada
+        isiDropdownMapelSiswa(tasks); 
+        
+        renderKartuTugasSiswa(dataTugasSiswaLokal);
     } catch (err) {
-        console.error("Gagal muat tugas:", err.message);
+        container.innerHTML = '<p style="color:red;">Gagal memuat tugas.</p>';
     }
 }
 
-// ==========================================
-// 4. LOGIKA DETAIL TUGAS & DOWNLOAD SOAL
-// ==========================================
-document.getElementById('select-tugas-siswa').addEventListener('change', async (e) => {
-    const taskId = e.target.value;
-    const areaSoal = document.getElementById('area-soal-siswa');
-    const areaUpload = document.getElementById('area-upload-jawaban');
-    const listSoal = document.getElementById('list-file-soal');
+// Menampilkan kartu tugas ke layar
+function renderKartuTugasSiswa(daftarTugas) {
+    const container = document.getElementById('container-tugas-siswa');
+    container.innerHTML = '';
 
-    if (!taskId) {
-        areaSoal.classList.add('hidden');
-        areaUpload.classList.add('hidden');
+    if (daftarTugas.length === 0) {
+        container.innerHTML = '<p style="color:#9ca3af; grid-column: 1 / -1; text-align: center;">Tidak ada tugas yang sesuai.</p>';
         return;
     }
 
-    // Tampilkan panel
-    areaSoal.classList.remove('hidden');
-    areaUpload.classList.remove('hidden');
-    listSoal.innerHTML = '<p>Mengecek file soal...</p>';
+    daftarTugas.forEach(task => {
+        const tglBuat = new Date(task.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+        const mapel = task.subjects?.name || 'Umum';
 
-    // Cari file dengan tipe 'soal' untuk tugas ini
-    const { data: files, error } = await supabaseClient
+        const card = document.createElement('div');
+        card.className = 'task-card';
+        // Memberikan cursor pointer agar siswa tahu ini bisa diklik
+        card.style.cursor = 'pointer'; 
+        
+        card.innerHTML = `
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                <span style="font-size:12px; color:var(--primary-color); font-weight:bold;">${mapel}</span>
+                <span style="font-size:12px; color:#9ca3af;">${tglBuat}</span>
+            </div>
+            <h3 style="margin: 0 0 15px 0; font-size:16px;">${task.title}</h3>
+            <button class="btn-outline" style="width:100%; border-color:var(--primary-color); color:var(--primary-color);">Buka Tugas</button>
+        `;
+
+        // Jika kartu diklik, buka panel detail
+        card.addEventListener('click', () => bukaDetailTugas(task.id, task.title, mapel));
+        container.appendChild(card);
+    });
+}
+
+// Logika Pencarian & Filter
+function filterTugasSiswa() {
+    const keyword = document.getElementById('input-cari-siswa').value.toLowerCase();
+    const mapel = document.getElementById('select-filter-mapel-siswa').value;
+
+    const hasil = dataTugasSiswaLokal.filter(t => {
+        const matchNama = t.title.toLowerCase().includes(keyword);
+        const matchMapel = mapel === "" || t.subjects?.name === mapel;
+        return matchNama && matchMapel;
+    });
+    
+    renderKartuTugasSiswa(hasil);
+}
+
+// Mengambil daftar mapel unik dari tugas yang tersedia untuk filter dropdown
+function isiDropdownMapelSiswa(tasks) {
+    const dropdown = document.getElementById('select-filter-mapel-siswa');
+    const mapelUnik = [...new Set(tasks.map(t => t.subjects?.name).filter(n => n))];
+    
+    dropdown.innerHTML = '<option value="">Semua Mapel</option>';
+    mapelUnik.forEach(mapel => {
+        dropdown.innerHTML += `<option value="${mapel}">${mapel}</option>`;
+    });
+}
+
+// Event Listener untuk input pencarian dan dropdown
+document.getElementById('input-cari-siswa').addEventListener('input', filterTugasSiswa);
+document.getElementById('select-filter-mapel-siswa').addEventListener('change', filterTugasSiswa);
+
+// ==========================================
+// 4. LOGIKA BUKA/TUTUP DETAIL TUGAS
+// ==========================================
+
+async function bukaDetailTugas(idTugas, judulTugas, mapel) {
+    tugasTerpilih = idTugas; // Simpan ke variabel global
+    
+    // 1. Sembunyikan grid, Tampilkan detail
+    document.getElementById('panel-daftar-tugas').classList.add('hidden');
+    document.getElementById('panel-detail-tugas').classList.remove('hidden');
+    
+    // 2. Ubah Teks Judul
+    document.getElementById('detail-judul-tugas').innerText = judulTugas;
+    document.getElementById('detail-mapel-tugas').innerText = mapel;
+
+    // 3. Ambil file soal (PDF) dari database
+    const listSoal = document.getElementById('list-file-soal');
+    listSoal.innerHTML = '<p style="font-size:13px; color:#6b7280;">Sedang memuat lampiran...</p>';
+
+    const { data: files } = await supabaseClient
         .from('task_files')
         .select('file_name, file_url')
-        .eq('task_id', taskId)
+        .eq('task_id', idTugas)
         .eq('file_type', 'soal');
 
-    if (error || !files || files.length === 0) {
-        listSoal.innerHTML = '<p style="color:#9ca3af;">Tidak ada lampiran soal (PDF/Gambar) dari guru.</p>';
+    if (!files || files.length === 0) {
+        listSoal.innerHTML = `
+            <div style="background:#F9FAFB; padding:12px; border-radius:8px; border:1px solid #E5E7EB;">
+                <p style="margin:0; font-size:13px; color:#6B7280;">Tidak ada file lampiran soal dari Guru.</p>
+            </div>`;
     } else {
         listSoal.innerHTML = files.map(f => `
-            <div class="file-item">
-                <a href="${f.file_url}" target="_blank" style="color:var(--primary-color); font-weight:bold; text-decoration:none;">
-                    📥 Unduh Soal: ${f.file_name}
+            <div class="file-item" style="margin-bottom: 8px; border-left: 4px solid var(--primary-color);">
+                <a href="${f.file_url}" target="_blank" style="color:var(--text-main); font-weight:600; text-decoration:none; display:flex; align-items:center; gap:10px;">
+                    <span style="font-size:20px;">📄</span> Download Soal: ${f.file_name}
                 </a>
             </div>
         `).join('');
     }
+}
+
+// Tombol Kembali
+document.getElementById('btn-kembali').addEventListener('click', () => {
+    tugasTerpilih = null;
+    document.getElementById('panel-detail-tugas').classList.add('hidden');
+    document.getElementById('panel-daftar-tugas').classList.remove('hidden');
+    
+    // Reset file input agar bersih saat memilih tugas lain
+    document.getElementById('file-jawaban').value = '';
+    document.getElementById('status-pilih-file').innerHTML = '<span>Klik untuk pilih foto</span> atau ambil gambar';
 });
 
 // ==========================================
-// 5. PROSES KIRIM JAWABAN KE N8N
+// 5. KIRIM JAWABAN KE N8N
 // ==========================================
+
 document.getElementById('btn-kirim-jawaban').addEventListener('click', async () => {
     const input = document.getElementById('file-jawaban');
-    const taskId = document.getElementById('select-tugas-siswa').value;
     const btn = document.getElementById('btn-kirim-jawaban');
 
-    if (!taskId) return alert("Pilih tugas terlebih dahulu!");
-    if (!input.files[0]) return alert("Silakan pilih foto atau file jawaban Anda!");
+    if (!tugasTerpilih) return alert("Pilih tugas terlebih dahulu!");
+    if (!input.files[0]) return alert("Silakan unggah foto jawaban Anda!");
 
-    // Set Loading State
     btn.innerText = "Sedang Mengirim...";
     btn.disabled = true;
-    btn.style.backgroundColor = "#9ca3af";
+    btn.style.opacity = "0.7";
 
     const fd = new FormData();
     fd.append('file_jawaban', input.files[0]);
-    fd.append('task_id', taskId);
+    fd.append('task_id', tugasTerpilih); // Menggunakan variabel global
     fd.append('student_id', dataSiswaLokal.id);
     fd.append('student_name', dataSiswaLokal.full_name);
 
-    // URL Webhook n8n untuk Koreksi (Upload Jawaban)
     const n8nWebhook = 'https://n8n.srv867549.hstgr.cloud/webhook-test/upload-jawaban';
 
     try {
         const response = await fetch(n8nWebhook, { method: 'POST', body: fd });
+        if (!response.ok) throw new Error("Gagal terhubung ke server");
 
-        if (!response.ok) throw new Error("Gagal terhubung ke server n8n");
-
-        alert("Jawaban berhasil terkirim! AI akan segera memberikan nilai.");
-        location.reload(); // Refresh untuk melihat status terbaru
-
+        alert("Berhasil! Jawaban terkirim dan sedang dikoreksi AI.");
+        location.reload(); 
     } catch (err) {
-        console.error("Gagal kirim:", err);
-        alert("Terjadi kesalahan saat mengirim jawaban. Pastikan koneksi stabil.");
+        alert("Terjadi kesalahan saat mengirim jawaban.");
     } finally {
         btn.innerText = "🚀 Kirim Jawaban Sekarang";
         btn.disabled = false;
-        btn.style.backgroundColor = "var(--primary-color)";
+        btn.style.opacity = "1";
     }
 });
 
 // ==========================================
-// 6. MUAT RIWAYAT NILAI (DARI TABEL SUBMISSIONS)
+// 6. RIWAYAT & LAINNYA
 // ==========================================
-async function muatRiwayatNilai(userId) {
-    const tableBody = document.getElementById('riwayat-tugas-siswa');
 
+async function muatRiwayatNilai(userId) {
+    const tbody = document.getElementById('riwayat-tugas-siswa');
     const { data: subs, error } = await supabaseClient
         .from('submissions')
         .select('score, status, created_at, tasks(title)')
@@ -181,7 +235,7 @@ async function muatRiwayatNilai(userId) {
 
     if (error || !subs || subs.length === 0) return;
 
-    tableBody.innerHTML = subs.map(s => `
+    tbody.innerHTML = subs.map(s => `
         <tr>
             <td>${s.tasks?.title || 'Tugas'}</td>
             <td>${new Date(s.created_at).toLocaleDateString('id-ID')}</td>
@@ -191,17 +245,13 @@ async function muatRiwayatNilai(userId) {
     `).join('');
 }
 
-// 7. Logout
 document.getElementById('btn-logout-siswa').onclick = () => {
-    supabaseClient.auth.signOut().then(() => {
-        window.location.href = 'dashboard.html';
-    });
+    supabaseClient.auth.signOut().then(() => window.location.href = 'dashboard.html');
 };
 
-// Update label file saat dipilih
 document.getElementById('file-jawaban').onchange = (e) => {
     const label = document.getElementById('status-pilih-file');
     if (e.target.files[0]) {
-        label.innerHTML = `File terpilih: <strong style="color:var(--success)">${e.target.files[0].name}</strong>`;
+        label.innerHTML = `Terpilih: <strong style="color:var(--success)">${e.target.files[0].name}</strong>`;
     }
 };

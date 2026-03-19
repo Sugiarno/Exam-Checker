@@ -8,6 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+    <div id="toast-container"></div>
 
     <nav class="top-nav hidden" id="main-nav">
         <div class="brand-logo-small">AG</div>
@@ -136,6 +137,20 @@
             <p>Anda akan dialihkan ke halaman Siswa...</p>
         </div>
 
+    </div>
+
+    <div id="modal-konfirmasi-hapus" class="modal hidden">
+        <div class="modal-content" style="max-width: 350px; text-align: center;">
+            <div style="font-size: 50px; margin-bottom: 10px;">⚠️</div>
+            <h2 style="margin-bottom: 10px;">Hapus Tugas?</h2>
+            <p id="teks-konfirmasi" style="color: var(--text-muted); font-size: 14px; margin-bottom: 25px;">
+                Tindakan ini tidak bisa dibatalkan.
+            </p>
+            <div class="btn-group">
+                <button id="btn-confirm-delete" class="submit-btn" style="background-color: var(--danger);">Hapus</button>
+                <button id="btn-cancel-delete" class="btn-outline">Batal</button>
+            </div>
+        </div>
     </div>
 
     <script src="script.js"></script>
