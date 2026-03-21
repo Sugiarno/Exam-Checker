@@ -65,14 +65,27 @@
                     📤 Unggah Lembar Jawaban Anda
                 </label>
                 
-                <label class="upload-area" for="file-jawaban">
+                <div id="drop-zone-siswa" class="upload-area">
                     <div class="upload-icon">📸</div>
-                    <p class="upload-text" id="status-pilih-file"><span>Klik untuk pilih foto</span> atau ambil gambar</p>
-                    <p class="upload-hint">Format: JPG, PNG, PDF (Maks 5MB)</p>
-                </label>
-                <input type="file" id="file-jawaban" accept="image/*, .pdf" style="display: none;">
+                    <p class="upload-text">Tarik & Lepas file jawabanmu di sini, atau</p>
+                    
+                    <div class="upload-actions">
+                        <label class="btn-outline" style="cursor: pointer; color: var(--primary-color); border-color: var(--primary-color);">
+                            📁 Pilih File
+                            <input type="file" id="file-jawaban-galeri" accept="image/*, .pdf" multiple style="display: none;">
+                        </label>
+                        
+                        <label class="btn-outline" style="cursor: pointer; color: var(--success); border-color: var(--success);">
+                            📷 Ambil Foto
+                            <input type="file" id="file-jawaban-kamera" accept="image/*" capture="environment" multiple style="display: none;">
+                        </label>
+                    </div>
+                    <p class="upload-hint">Bisa unggah lebih dari 1 file/foto sekaligus.</p>
+                </div>
 
-                <button id="btn-kirim-jawaban" class="submit-btn" style="margin-top: 10px;">
+                <div id="preview-jawaban-siswa" class="file-preview-container" style="margin-top: 15px;"></div>
+
+                <button id="btn-kirim-jawaban" class="submit-btn" style="margin-top: 20px;">
                     🚀 Kirim Jawaban Sekarang
                 </button>
             </div>
@@ -97,6 +110,11 @@
             </div>
         </div>
 
+    </div>
+
+    <div id="global-loader">
+        <div class="spinner"></div>
+        <p id="loader-text">Sedang Memproses...</p>
     </div>
 
     <script src="script_siswa.js"></script>

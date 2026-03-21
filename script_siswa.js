@@ -184,40 +184,124 @@ document.getElementById('btn-kembali').addEventListener('click', () => {
 });
 
 // ==========================================
-// 5. KIRIM JAWABAN KE N8N
+// 5. SISTEM KERANJANG JAWABAN & DRAG AND DROP
+// ==========================================
+
+let keranjangJawaban = []; // Keranjang untuk menampung file siswa
+
+// Fungsi untuk menggambar file di layar
+function renderPreviewJawaban() {
+    const container = document.getElementById('preview-jawaban-siswa');
+    container.innerHTML = '';
+
+    keranjangJawaban.forEach((file, index) => {
+        const item = document.createElement('div');
+        item.className = 'file-item';
+        item.innerHTML = `
+            <span class="file-name">📎 ${file.name}</span>
+            <button type="button" class="btn-hapus-file">✕</button>
+        `;
+        
+        // Logika hapus dari keranjang
+        item.querySelector('.btn-hapus-file').onclick = () => {
+            keranjangJawaban.splice(index, 1);
+            renderPreviewJawaban();
+        };
+        container.appendChild(item);
+    });
+}
+
+// Handler saat file dipilih via tombol (Galeri atau Kamera)
+function handleFileSelect(e) {
+    const files = Array.from(e.target.files);
+    files.forEach(file => keranjangJawaban.push(file));
+    e.target.value = ''; // Reset agar bisa pilih file yang sama lagi
+    renderPreviewJawaban();
+}
+
+document.getElementById('file-jawaban-galeri')?.addEventListener('change', handleFileSelect);
+document.getElementById('file-jawaban-kamera')?.addEventListener('change', handleFileSelect);
+
+// Handler untuk Drag & Drop
+const dropZone = document.getElementById('drop-zone-siswa');
+
+if (dropZone) {
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover'); // Menambahkan efek warna saat file diseret
+    });
+
+    dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover'); // Menghilangkan efek warna
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        
+        const files = Array.from(e.dataTransfer.files);
+        files.forEach(file => keranjangJawaban.push(file));
+        renderPreviewJawaban();
+    });
+}
+
+// ==========================================
+// BLOK 5B. KIRIM BANYAK JAWABAN KE N8N (SISWA)
 // ==========================================
 
 document.getElementById('btn-kirim-jawaban').addEventListener('click', async () => {
-    const input = document.getElementById('file-jawaban');
-    const btn = document.getElementById('btn-kirim-jawaban');
+    
+    // 1. Validasi Awal (Pengecekan Kesalahan)
+    if (!tugasTerpilih) {
+        return showToast("Pilih tugas terlebih dahulu!", "error");
+    }
+    if (keranjangJawaban.length === 0) {
+        return showToast("Silakan unggah minimal 1 foto/file jawaban Anda!", "error");
+    }
 
-    if (!tugasTerpilih) return alert("Pilih tugas terlebih dahulu!");
-    if (!input.files[0]) return alert("Silakan unggah foto jawaban Anda!");
+    // 2. Tampilkan Layar Loading Global
+    showLoading("Mengunggah Jawaban ke AI... Harap Tunggu 🚀");
 
-    btn.innerText = "Sedang Mengirim...";
-    btn.disabled = true;
-    btn.style.opacity = "0.7";
-
+    // 3. Persiapan Data (Bungkus ke dalam FormData)
     const fd = new FormData();
-    fd.append('file_jawaban', input.files[0]);
-    fd.append('task_id', tugasTerpilih); // Menggunakan variabel global
+    fd.append('task_id', tugasTerpilih); 
     fd.append('student_id', dataSiswaLokal.id);
     fd.append('student_name', dataSiswaLokal.full_name);
+    
+    // Looping (Mengulang) untuk memasukkan semua file dari keranjang ke FormData
+    keranjangJawaban.forEach((file, index) => {
+        fd.append(`file_jawaban_${index}`, file);
+    });
 
-    const n8nWebhook = 'https://n8n.srv867549.hstgr.cloud/webhook-test/upload-jawaban';
+    // 4. Proses Pengiriman (Fetch API ke Webhook n8n)
+    const n8nWebhook = 'https://n8n.srv867549.hstgr.cloud/webhook/upload-jawaban';
 
     try {
-        const response = await fetch(n8nWebhook, { method: 'POST', body: fd });
-        if (!response.ok) throw new Error("Gagal terhubung ke server");
+        const response = await fetch(n8nWebhook, { 
+            method: 'POST', 
+            body: fd 
+        });
 
-        alert("Berhasil! Jawaban terkirim dan sedang dikoreksi AI.");
-        location.reload(); 
+        // Cek apakah server n8n merespon dengan sukses (status 200-299)
+        if (!response.ok) {
+            throw new Error("Gagal terhubung ke server n8n");
+        }
+
+        // 5. Aksi Jika Berhasil (Sukses)
+        showToast("Berhasil! Jawaban terkirim dan sedang dikoreksi AI.", "success");
+        
+        keranjangJawaban.length = 0;                  // Kosongkan keranjang file di memori
+        document.getElementById('btn-kembali').click(); // Simulasikan klik tombol 'Kembali' untuk menutup panel
+        muatRiwayatNilai(dataSiswaLokal.id);          // Segarkan tabel riwayat di bagian bawah
+        
     } catch (err) {
-        alert("Terjadi kesalahan saat mengirim jawaban.");
+        // 6. Aksi Jika Gagal (Eror Koneksi/Server)
+        showToast("Terjadi kesalahan jaringan saat mengirim jawaban.", "error");
     } finally {
-        btn.innerText = "🚀 Kirim Jawaban Sekarang";
-        btn.disabled = false;
-        btn.style.opacity = "1";
+        // 7. Tahap Akhir (Pembersihan)
+        // Blok ini PASTI dijalankan, entah prosesnya sukses ataupun gagal
+        hideLoading(); // Matikan layar loading agar siswa bisa beraktivitas lagi
     }
 });
 
@@ -255,3 +339,20 @@ document.getElementById('file-jawaban').onchange = (e) => {
         label.innerHTML = `Terpilih: <strong style="color:var(--success)">${e.target.files[0].name}</strong>`;
     }
 };
+
+// --- FUNGSI GLOBAL LOADING ---
+function showLoading(text = "Sedang Memproses...") {
+    const loader = document.getElementById('global-loader');
+    const loaderText = document.getElementById('loader-text');
+    if (loader && loaderText) {
+        loaderText.innerText = text;
+        loader.classList.add('show');
+    }
+}
+
+function hideLoading() {
+    const loader = document.getElementById('global-loader');
+    if (loader) {
+        loader.classList.remove('show');
+    }
+}

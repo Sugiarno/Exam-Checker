@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Orang Tua - AutoGrader</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+    <nav id="main-nav" class="navbar">
+        <div class="nav-brand">Portal Orang Tua</div>
+        <div class="user-profile">
+            <span id="user-name">Memuat...</span>
+            <span id="user-role-badge" class="role-badge">ORANG TUA</span>
+            <button id="btn-logout-ortu" class="btn-outline" style="padding: 5px 10px;">Logout</button>
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <div class="header-left" style="margin-bottom: 30px;">
+            <h1>Pantau Perkembangan Anak</h1>
+            <p>Lihat hasil evaluasi dan nilai tugas secara real-time.</p>
+        </div>
+
+        <div class="task-card" style="background-color: #EEF2FF; border-color: var(--primary-color);">
+            <h3 style="margin-top: 0; color: var(--primary-color);">Profil Siswa</h3>
+            <p><strong>Nama:</strong> <span id="nama-anak">Memuat data...</span></p>
+            <p><strong>Kelas:</strong> <span id="kelas-anak">Memuat data...</span></p>
+        </div>
+
+        <div style="margin-top: 40px;">
+            <h3>Riwayat Nilai & Evaluasi</h3>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Tugas</th>
+                            <th>Tanggal Kirim</th>
+                            <th>Nilai</th>
+                            <th style="width: 40%;">Catatan</th>
+                        </tr>
+                    </thead>
+                    <tbody id="riwayat-nilai-anak">
+                        <tr><td colspan="4" style="text-align:center;">Memuat data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="script_orangtua.js"></script>
+</body>
+</html>

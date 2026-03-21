@@ -308,3 +308,85 @@ body {
 .toast.info { border-left-color: var(--primary-color); }
 
 .toast-icon { font-size: 18px; }
+
+/* --- TAMBAHAN UNTUK DRAG & DROP SISWA --- */
+.upload-area {
+    position: relative;
+    overflow: hidden;
+}
+
+/* Efek menyala saat file diseret ke atas area */
+.upload-area.dragover {
+    border-color: var(--primary-color);
+    background-color: #EEF2FF;
+    transform: scale(1.02);
+}
+
+.upload-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 15px;
+    position: relative;
+    z-index: 10;
+}
+
+.upload-actions .btn-outline {
+    background-color: white;
+    font-size: 13px;
+    padding: 8px 12px;
+}
+
+.upload-actions .btn-outline:hover {
+    background-color: #F9FAFB;
+}
+
+/* ==========================================
+   GLOBAL LOADING OVERLAY
+   ========================================== */
+#global-loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(4px); /* Efek blur modern */
+    z-index: 99999; /* Pastikan selalu di paling atas */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none; /* Awalnya tidak bisa diklik */
+    transition: opacity 0.3s ease;
+}
+
+/* Kelas ini yang akan memunculkan layar loading dan memblokir klik */
+#global-loader.show {
+    opacity: 1;
+    pointer-events: all; /* Memblokir klik ke elemen di bawahnya */
+}
+
+/* Animasi Spinner Putar */
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #EEF2FF;
+    border-top-color: var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 15px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+#loader-text {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-main);
+    letter-spacing: 0.5px;
+}

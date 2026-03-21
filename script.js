@@ -97,6 +97,8 @@ function tampilkanHalamanBerdasarkanRole(user) {
         inisialisasiDashboardGuru();           // Tarik data tugas dari database
     } else if (user.role === 'siswa') {
         window.location.href = 'siswa.html';   // Pindahkan ke file HTML siswa
+    } else if (user.role === 'orangtua' || user.role === 'orang_tua') {
+        window.location.href = 'orangtua.html';
     }
 }
 
@@ -263,54 +265,67 @@ function resetFormTugas() {
 }
 
 // ==========================================
-// BLOK 6: MENGIRIM DATA KE WEBHOOK N8N
+// BLOK 6. SIMPAN TUGAS KE WEBHOOK N8N (GURU)
 // ==========================================
 
 async function simpanTugasKeN8N() {
-    const btn = document.getElementById('btn-simpan-tugas');
-    const modal = document.getElementById('modal-buat-tugas');
     
-    // 1. Kumpulkan data dari form teks
+    // 1. Ambil data dari elemen input (Form)
     const payload = {
         mapel: document.getElementById('input-mapel').value,
         kelas: document.getElementById('input-kelas').value,
         judul: document.getElementById('input-nama-tugas').value
     };
 
-    // 2. Cegah pengiriman jika data kosong
+    // 2. Validasi Awal (Pastikan tidak ada yang kosong)
     if (!payload.mapel || !payload.kelas || !payload.judul || keranjangKunci.length === 0) {
         return showToast("Mohon lengkapi semua data dan wajib unggah kunci jawaban!", "error");
     }
 
-    btn.innerText = "Sedang Mengirim...";
-    btn.disabled = true;
+    // 3. Tampilkan Layar Loading Global
+    showLoading("Mempublikasikan Tugas & Kunci Jawaban... 📚");
 
-    // 3. Susun data menggunakan FormData (Format standar untuk mengirim kombinasi teks & file)
+    // 4. Persiapan Data (Bungkus ke dalam FormData)
     const fd = new FormData();
     fd.append('subject_id', payload.mapel);
     fd.append('class_id', payload.kelas);
     fd.append('nama_tugas', payload.judul);
-    keranjangSoal.forEach((f, i) => fd.append(`file_soal_${i}`, f));
-    keranjangKunci.forEach((f, i) => fd.append(`file_kunci_${i}`, f));
+    
+    // Looping untuk memasukkan semua file soal (opsional) dan kunci jawaban (wajib)
+    keranjangSoal.forEach((file, index) => {
+        fd.append(`file_soal_${index}`, file);
+    });
+    keranjangKunci.forEach((file, index) => {
+        fd.append(`file_kunci_${index}`, file);
+    });
+
+    // 5. Proses Pengiriman ke n8n
+    const n8nWebhook = 'https://n8n.srv867549.hstgr.cloud/webhook/buat-tugas';
 
     try {
-        // 4. Tembakkan ke n8n
-        const res = await fetch('https://n8n.srv867549.hstgr.cloud/webhook-test/buat-tugas', { method: 'POST', body: fd });
+        const res = await fetch(n8nWebhook, { 
+            method: 'POST', 
+            body: fd 
+        });
         
-        if (res.ok) {
-            showToast("Tugas berhasil dipublikasikan ke siswa!", "success");
-            modal.classList.add('hidden'); // Tutup modal
-            
-            resetFormTugas(); // Panggil fungsi pembersih form
-            muatDaftarTugas(); // Tarik ulang data tugas agar folder baru langsung muncul
-        } else {
-            throw new Error();
+        // Cek apakah server merespon sukses
+        if (!res.ok) {
+            throw new Error("Respon server gagal");
         }
+
+        // 6. Aksi Jika Berhasil
+        showToast("Tugas berhasil dipublikasikan ke siswa!", "success");
+        
+        document.getElementById('modal-buat-tugas').classList.add('hidden'); // Tutup modal pop-up
+        resetFormTugas();  // Bersihkan input teks dan keranjang memori
+        muatDaftarTugas(); // Segarkan kartu folder tugas di dashboard agar yang baru langsung muncul
+        
     } catch (e) {
-        showToast("Gagal terhubung ke server n8n.", "error");
+        // 7. Aksi Jika Gagal
+        showToast("Gagal terhubung ke server n8n. Pastikan workflow aktif.", "error");
     } finally {
-        btn.innerText = "Simpan Tugas";
-        btn.disabled = false;
+        // 8. Tahap Akhir (Pembersihan)
+        hideLoading(); // Matikan layar loading transparan
     }
 }
 
@@ -362,3 +377,20 @@ document.addEventListener('DOMContentLoaded', () => {
     setupFileCart('input-file-soal', 'preview-soal', keranjangSoal);
     setupFileCart('input-file-kunci', 'preview-kunci', keranjangKunci);
 });
+
+// --- FUNGSI GLOBAL LOADING ---
+function showLoading(text = "Sedang Memproses...") {
+    const loader = document.getElementById('global-loader');
+    const loaderText = document.getElementById('loader-text');
+    if (loader && loaderText) {
+        loaderText.innerText = text;
+        loader.classList.add('show');
+    }
+}
+
+function hideLoading() {
+    const loader = document.getElementById('global-loader');
+    if (loader) {
+        loader.classList.remove('show');
+    }
+}
