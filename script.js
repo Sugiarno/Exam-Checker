@@ -3,8 +3,11 @@
 // ==========================================
 
 // Inisialisasi koneksi ke database Supabase Anda
-const supabaseUrl = 'https://vhvryershcomgwxezggo.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZodnJ5ZXJzaGNvbWd3eGV6Z2dvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI2MDcyNDQsImV4cCI6MjA3ODE4MzI0NH0.Ul-kcLoMGKdbQB_J6YJkTFrgTYMqc1f4FRhBHgOUWW8';
+// Panggil dari file .env menggunakan import.meta.env
+const supabaseUrl = import.meta.env.VITE_Supabase_Url;
+const supabaseKey = import.meta.env.VITE_Supabase_Key;
+
+// Pastikan Anda memanggil script supabase dari CDN di file HTML Anda
 const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 // Variabel Global (State) untuk menyimpan data sementara di memori browser
@@ -76,7 +79,9 @@ async function handleLogin() {
         // 3. Arahkan user ke halaman yang tepat berdasarkan role
         tampilkanHalamanBerdasarkanRole(userData);
     } catch (error) {
-        showToast("Login Gagal: Akun tidak ditemukan atau password salah.", "error");
+        // Ini akan memunculkan pesan error ASLI dari Supabase ke layar Anda
+        showToast("Pesan Supabase: " + error.message, "error");
+        console.error("Detail lengkap:", error);
     } finally {
         btnLogin.innerText = "Masuk"; // Kembalikan teks tombol
     }
@@ -170,6 +175,8 @@ function hapusTugas(id, judul) {
     document.getElementById('teks-konfirmasi').innerText = `Apakah Anda yakin ingin menghapus tugas "${judul}"? Semua data terkait akan hilang.`;
     document.getElementById('modal-konfirmasi-hapus').classList.remove('hidden'); // Munculkan modal
 }
+
+window.hapusTugas = hapusTugas;
 
 document.getElementById('btn-cancel-delete')?.addEventListener('click', () => {
     document.getElementById('modal-konfirmasi-hapus').classList.add('hidden'); // Tutup modal jika batal
@@ -300,7 +307,7 @@ async function simpanTugasKeN8N() {
     });
 
     // 5. Proses Pengiriman ke n8n
-    const n8nWebhook = 'https://n8n.srv867549.hstgr.cloud/webhook/buat-tugas';
+    const n8nWebhook = import.meta.env.VITE_N8N_Production_url_guru;
 
     try {
         const res = await fetch(n8nWebhook, { 

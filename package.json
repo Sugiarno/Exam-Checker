@@ -1,0 +1,28 @@
+{
+  "name": "exam-checker",
+  "version": "1.0.0",
+  "description": "",
+  "main": "script.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sugiarno/Exam-Checker.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Sugiarno/Exam-Checker/issues"
+  },
+  "homepage": "https://github.com/Sugiarno/Exam-Checker#readme",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.99.3",
+    "dotenv": "^17.3.1"
+  },
+  "devDependencies": {
+    "vite": "^8.0.1"
+  }
+}
