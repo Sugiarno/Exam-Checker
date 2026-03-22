@@ -1,8 +1,9 @@
 // ==========================================
 // 1. KONFIGURASI SUPABASE & STATE
 // ==========================================
-const supabaseUrl = 'https://vhvryershcomgwxezggo.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZodnJ5ZXJzaGNvbWd3eGV6Z2dvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI2MDcyNDQsImV4cCI6MjA3ODE4MzI0NH0.Ul-kcLoMGKdbQB_J6YJkTFrgTYMqc1f4FRhBHgOUWW8';
+const supabaseUrl = import.meta.env.VITE_Supabase_Url;
+const supabaseKey = import.meta.env.VITE_Supabase_Key;
+
 const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 let dataSiswaLokal = null;
@@ -275,7 +276,7 @@ document.getElementById('btn-kirim-jawaban').addEventListener('click', async () 
     });
 
     // 4. Proses Pengiriman (Fetch API ke Webhook n8n)
-    const n8nWebhook = 'https://n8n.srv867549.hstgr.cloud/webhook/upload-jawaban';
+    const n8nWebhook = import.meta.env.VITE_N8N_Production_url_guru;
 
     try {
         const response = await fetch(n8nWebhook, { 
