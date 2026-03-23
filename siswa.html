@@ -3,26 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Siswa - Kirim Jawaban AutoGrader</title>
+    <title>Ruang Siswa - AutoGrader AI</title>
+    
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body>
+<body class="student-page">
+
+    <div id="toast-container"></div>
 
     <nav class="top-nav" id="main-nav-siswa">
         <div class="brand-logo-small">AG</div>
         <div class="user-profile">
-            <span id="user-name">Siswa Memuat...</span>
+            <span id="user-name" class="user-name-text">Siswa Memuat...</span>
             <span class="badge">SISWA</span>
             <button id="btn-logout-siswa" class="btn-outline">Keluar</button>
         </div>
     </nav>
 
-<div class="main-container">
+    <div class="main-container">
         
         <div class="header-left">
             <h1>Ruang Tugas Siswa</h1>
-            <p>Pilih tugas dan unggah foto lembar jawabanmu di sini.</p>
+            <p>Pilih tugas di bawah ini untuk mengunduh soal dan mengunggah jawabanmu.</p>
         </div>
 
         <div id="panel-daftar-tugas">
@@ -48,7 +51,7 @@
             </button>
 
             <div class="task-info">
-                <strong id="detail-judul-tugas" style="font-size: 18px;">Memuat Judul...</strong>
+                <strong id="detail-judul-tugas" style="font-size: 18px; color: var(--primary-color);">Memuat Judul...</strong>
                 <span id="detail-mapel-tugas" class="student-name">Mata Pelajaran</span>
             </div>
 
@@ -67,11 +70,11 @@
                 
                 <div id="drop-zone-siswa" class="upload-area">
                     <div class="upload-icon">📸</div>
-                    <p class="upload-text">Tarik & Lepas file jawabanmu di sini, atau</p>
+                    <p class="upload-text">Tarik & Lepas foto jawabanmu di sini, atau</p>
                     
                     <div class="upload-actions">
                         <label class="btn-outline" style="cursor: pointer; color: var(--primary-color); border-color: var(--primary-color);">
-                            📁 Pilih File
+                            📁 Pilih dari Galeri
                             <input type="file" id="file-jawaban-galeri" accept="image/*, .pdf" multiple style="display: none;">
                         </label>
                         
@@ -80,25 +83,25 @@
                             <input type="file" id="file-jawaban-kamera" accept="image/*" capture="environment" multiple style="display: none;">
                         </label>
                     </div>
-                    <p class="upload-hint">Bisa unggah lebih dari 1 file/foto sekaligus.</p>
+                    <p class="upload-hint">Siswa bisa mengirim lebih dari satu foto sekaligus.</p>
                 </div>
 
                 <div id="preview-jawaban-siswa" class="file-preview-container" style="margin-top: 15px;"></div>
 
-                <button id="btn-kirim-jawaban" class="submit-btn" style="margin-top: 20px;">
+                <button id="btn-kirim-jawaban" class="submit-btn" style="margin-top: 20px; width: 100%;">
                     🚀 Kirim Jawaban Sekarang
                 </button>
             </div>
         </div>
 
         <div style="margin-top: 50px;">
-            <h3>Status Pengiriman Terakhir</h3>
+            <h3>Hasil Evaluasi Terakhir</h3>
             <div class="table-container">
                 <table class="data-table">
                     <thead>
                         <tr>
                             <th>Tugas</th>
-                            <th>Tanggal Kirim</th>
+                            <th>Tanggal</th>
                             <th>Status</th>
                             <th>Nilai AI</th>
                         </tr>
@@ -112,9 +115,9 @@
 
     </div>
 
-    <div id="global-loader">
+    <div id="global-loader" class="hidden">
         <div class="spinner"></div>
-        <p id="loader-text">Sedang Memproses...</p>
+        <p id="loader-text">Sedang Mengirim ke AI...</p>
     </div>
 
     <script type="module" src="./script_siswa.js"></script>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Guru - AutoGrader AI</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="teacher-page">
+
+    <div id="toast-container"></div>
+
+    <nav class="top-nav" id="main-nav-guru">
+        <div class="brand-logo-small">AG</div>
+        <div class="user-profile">
+            <span id="user-name">Guru Memuat...</span>
+            <span class="badge" style="background-color: var(--primary-color);">GURU</span>
+            <button id="btn-logout-guru" class="btn-outline">Keluar</button>
+        </div>
+    </nav>
+
+    <div class="main-container">
+
+        <div class="header-left">
+            <h1>Dashboard Guru</h1>
+            <p>Kelola tugas dan pantau hasil koreksi AI untuk seluruh siswa.</p>
+        </div>
+        
+        <div class="action-bar" style="margin-bottom: 30px;">
+            <button id="btn-buka-modal" class="submit-btn" style="width: auto;">+ Buat Tugas Baru</button>
+        </div>
+
+        <div class="toolbar-tugas">
+            <div class="search-box">
+                <input type="text" id="input-cari" placeholder="🔍 Cari judul tugas...">
+            </div>
+            <div class="filter-box">
+                <select id="select-filter-mapel">
+                    <option value="">Semua Mapel</option>
+                </select>
+                <select id="select-filter-kelas">
+                    <option value="">Semua Kelas</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="container-daftar-tugas" class="grid-tugas">
+            <p class="loading-text">Memuat daftar tugas...</p>
+        </div>
+
+        <hr class="separator" style="margin: 50px 0;">
+
+        <div class="rekap-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>Rekapitulasi Nilai Siswa</h2>
+                <button id="btn-arsip" class="btn-arsip">📥 Download CSV (Arsip)</button>
+            </div>
+            
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Nama Siswa</th>
+                            <th>Mata Pelajaran</th>
+                            <th>Tugas</th>
+                            <th>Nilai AI</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body-rekap">
+                        <tr><td colspan="5" style="text-align:center; color: var(--text-muted);">Data akan muncul setelah tugas dinilai oleh AI.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-buat-tugas" class="modal hidden">
+        <div class="modal-content">
+            <h2>Buat Tugas Baru</h2>
+            <p class="modal-subtitle">Unggah soal dan kunci jawaban untuk memulai koreksi otomatis oleh Gemini.</p>
+            
+            <div class="form-group">
+                <label>Mata Pelajaran</label>
+                <select id="input-mapel" class="form-select">
+                    <option value="">-- Pilih Mata Pelajaran --</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Target Kelas</label>
+                <select id="input-kelas" class="form-select">
+                    <option value="">-- Pilih Kelas --</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Judul Tugas</label>
+                <input type="text" id="input-nama-tugas" class="form-input" placeholder="Contoh: PH 1 Aljabar">
+            </div>
+            
+            <div style="display: flex; gap: 20px; margin-top: 15px;">
+                <div style="flex: 1;">
+                    <label class="label-bold">File Soal (PDF/Gambar)</label>
+                    <div class="custom-file-upload">
+                        <input type="file" id="input-file-soal" accept=".pdf, image/*" multiple style="display: none;">
+                        <button type="button" class="btn-pilih-file" onclick="document.getElementById('input-file-soal').click()">+ Soal</button>
+                        <div id="preview-soal" class="file-preview-container"></div>
+                    </div>
+                </div>
+                <div style="flex: 1;">
+                    <label class="label-bold">Kunci Jawaban (Wajib)</label>
+                    <div class="custom-file-upload">
+                        <input type="file" id="input-file-kunci" accept=".pdf, image/*" multiple style="display: none;">
+                        <button type="button" class="btn-pilih-file" onclick="document.getElementById('input-file-kunci').click()">+ Kunci</button>
+                        <div id="preview-kunci" class="file-preview-container"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="btn-group" style="margin-top: 30px;">
+                <button id="btn-simpan-tugas" class="submit-btn">Aktifkan Tugas</button>
+                <button id="btn-tutup-modal" class="btn-outline">Batal</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-konfirmasi-hapus" class="modal hidden">
+        <div class="modal-content" style="max-width: 350px; text-align: center;">
+            <div style="font-size: 50px; margin-bottom: 10px;">⚠️</div>
+            <h2>Hapus Tugas?</h2>
+            <p id="teks-konfirmasi" style="color: var(--text-muted); font-size: 14px; margin-bottom: 25px;">Data nilai siswa pada tugas ini akan ikut terhapus.</p>
+            <div class="btn-group">
+                <button id="btn-confirm-delete" class="submit-btn" style="background-color: var(--danger);">Hapus</button>
+                <button id="btn-cancel-delete" class="btn-outline">Batal</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="global-loader" class="hidden">
+        <div class="spinner"></div>
+        <p id="loader-text">Sedang Memproses...</p>
+    </div>
+
+    <script type="module" src="./script_guru.js"></script>
+</body>
+</html>
